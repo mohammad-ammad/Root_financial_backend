@@ -13,8 +13,9 @@ class AssetController extends Controller
     public function store(Request $req)
     {
         $validation = Validator::make($req->all(),[ 
-            'address' => 'required|unique:assets,address',
+            // 'address' => 'required|unique:assets,address',
             'token' => 'required|unique:assets,token',
+            '_token' => 'required',
         ]);
 
         if ($validation->fails()) 
@@ -25,32 +26,43 @@ class AssetController extends Controller
 
         else 
         {
-            [$id] = explode('|', Cookie::get('token') , 2);
+            [$id] = explode('|', $req->_token , 2);
 
             $user_id = PersonalAccessToken::where('id',$id)->select('tokenable_id')->first();
 
-            $asset = new Asset();
-
-            $asset->user_id = $user_id->tokenable_id;
-            $asset->address = $req->address;
-            $asset->token = $req->token;
-
-            $asset->save();
-
-            if(! empty($asset->id))
+            if(! empty($user_id))
             {
-                return response()->json([
-                    "message"=>"Data Inserted Successfully",
-                    "status"=>true,
-                ]);
+                $asset = new Asset();
+
+                $asset->user_id = $user_id->tokenable_id;
+                $asset->address = $req->address;
+                $asset->token = $req->token;
+
+                $asset->save();
+
+                if(! empty($asset->id))
+                {
+                    return response()->json([
+                        "message"=>"Data Inserted Successfully",
+                        "status"=>true,
+                    ]);
+                }
+                else 
+                {
+                    return response()->json([
+                        "message"=>"Something went wrong",
+                        "status"=>false,
+                    ]);
+                }
             }
             else 
             {
                 return response()->json([
-                    "message"=>"Something went wrong",
+                    "data"=>"Invalid Token",
                     "status"=>false,
                 ]);
             }
+            
 
         }
     }

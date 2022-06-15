@@ -15,16 +15,20 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::group(['prefix' => 'v1','middleware'=>'user_auth'],function(){
-    Route::get('/me',[App\Http\Controllers\AuthController::class,'profile']);
     Route::get('/logout',[App\Http\Controllers\AuthController::class,'destroy']);
 
-    //assets
-    Route::post('/assets',[App\Http\Controllers\AssetController::class,'store']);
-
-    //shares
-    Route::post('/shares',[App\Http\Controllers\ShareController::class,'store']);
-    Route::get('/shares',[App\Http\Controllers\ShareController::class,'fetch']);
+    
 });
+
+Route::get('v1/me',[App\Http\Controllers\AuthController::class,'profile']);
+
+//assets
+Route::post('v1/assets',[App\Http\Controllers\AssetController::class,'store']);
+
+//shares
+Route::post('v1/shares',[App\Http\Controllers\ShareController::class,'store']);
+Route::get('v1/shares',[App\Http\Controllers\ShareController::class,'fetch']);
+Route::get('v1/all_shares',[App\Http\Controllers\ShareController::class,'fetch_all']);
 
 
 Route::post('/v1/register',[App\Http\Controllers\AuthController::class,'store']);

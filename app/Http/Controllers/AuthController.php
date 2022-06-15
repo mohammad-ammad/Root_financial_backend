@@ -66,9 +66,9 @@ class AuthController extends Controller
                 {
                     $token = $user->createToken('root_finance')->plainTextToken;
 
-
                     return response()->json([
                         "message"=>"Login Successfully",
+                        "role"=>$user->roles,
                         "status"=>true,
                         "token" => $token
                     ])->cookie('token', $token, 120);
@@ -91,18 +91,41 @@ class AuthController extends Controller
         }
     }
 
-    public function profile()
+    public function profile(Request $req)
     {
-        [$id] = explode('|', Cookie::get('token') , 2);
+        $validation = Validator::make($req->all(),[ 
+            '_token' => 'required',
+        ]);
+
+        if ($validation->fails()) 
+        {
+            $response['message'] = $validation->messages()->first();
+            return response()->json($response);
+        }
+
+        [$id] = explode('|', $req->_token , 2);
 
         $user_id = PersonalAccessToken::where('id',$id)->select('tokenable_id')->first();
 
-        $user = User::find($user_id);
+        if(! empty($user_id))
+        {
+            $user = User::find($user_id);
 
-        return response()->json([
-            "data"=>$user,
-            "status"=>true,
-        ]);
+            return response()->json([
+                "data"=>$user,
+                "status"=>true,
+            ]);
+        }
+
+        else 
+        {
+            return response()->json([
+                "data"=>"Invalid Token",
+                "status"=>false,
+            ]);
+        }
+
+        
     }
 
     public function destroy(Request $req)
