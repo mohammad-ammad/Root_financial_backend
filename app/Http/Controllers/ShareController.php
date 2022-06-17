@@ -148,7 +148,7 @@ class ShareController extends Controller
             foreach($share as $val)
             {
                 $resp['shares'] = Share::where('user_id',$val)->orderBy('id','desc')->limit(1)->get();
-                $resp['address'] = Asset::where('user_id',$val)->select('address')->get();
+                $resp['address'] = Asset::where('user_id',$val)->distinct('address')->select('address')->get();
 
                 array_push($response['data'],$resp);
             }
