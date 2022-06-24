@@ -29,7 +29,7 @@ class ShareController extends Controller
 
         if(! empty($user_id))
         {
-            $asset = Asset::where('user_id', $user_id->tokenable_id)->count();
+            $asset = Asset::where('user_id', $user_id->tokenable_id)->where('status',1)->count();
 
             $total_shares = ($asset * 100)/5000000;
     
@@ -175,5 +175,48 @@ class ShareController extends Controller
             ]);
         }
         
+    }
+    
+    public function remove_token($token, $tokenId)
+    {
+
+        if ($tokenId == null) 
+        {
+            return response()->json([
+                "message"=>"Invalid User",
+                "status"=>false,
+            ]);
+        }
+        
+        [$id] = explode('|', $tokenId , 2);
+
+        $user_id = PersonalAccessToken::where('id',$id)->select('tokenable_id')->first();
+        
+        $data = Asset::where('user_id',$user_id->tokenable_id)->where('status',1)->limit($token)->orderBy('id','desc')->get();
+        
+        foreach($data as $val)
+        {
+            $resp = Asset::find($val->id);
+            $resp->status = 0;
+            $resp->update();
+        }
+        
+        $asset = Asset::where('user_id', $user_id->tokenable_id)->where('status',1)->count();
+        
+
+        $total_shares = ($asset * 100)/5000000;
+    
+        $total_shares = number_format($total_shares, 5);
+    
+        $share = new Share();
+    
+        $share->user_id = $user_id->tokenable_id;
+        $share->total_share = $total_shares;
+        $share->save();
+        
+        return response()->json([
+                "message"=>"Token removed",
+                "status"=>true,
+            ]);
     }
 }
