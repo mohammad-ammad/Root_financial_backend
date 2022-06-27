@@ -34,7 +34,7 @@ Route::get('v1/remove/{token}/{tokenId}',[App\Http\Controllers\ShareController::
 //proposer
 Route::post('v1/proposer',[App\Http\Controllers\ProposerController::class,'store']);
 Route::post('v1/vote',[App\Http\Controllers\ProposerController::class,'vote']);
-Route::get('v1/proposer',[App\Http\Controllers\ProposerController::class,'fetch']);
+Route::get('v1/proposer/{token}',[App\Http\Controllers\ProposerController::class,'fetch']);
 Route::get('v1/power',[App\Http\Controllers\ProposerController::class,'power']);
 Route::get('v1/voting-result',[App\Http\Controllers\ProposerController::class,'voting_result']);
 

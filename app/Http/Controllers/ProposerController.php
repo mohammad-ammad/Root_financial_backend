@@ -162,40 +162,57 @@ class ProposerController extends Controller
 
     }
 
-    public function fetch()
+    public function fetch($token)
     {
-        
-        $data = DB::table('proposer')
+        // return $token;
+        [$id] = explode('|', $token , 2);
+
+        $user_id = PersonalAccessToken::where('id',$id)->select('tokenable_id')->first();
+    
+        if(! empty($user_id))
+        {
+            $data = DB::table('proposer')
             ->leftJoin('assets', function ($leftJoin) {
                 $leftJoin->on('proposer.user_id', '=', 'assets.user_id')
                         ->where('assets.created_at', '=', DB::raw("(select max(`created_at`) from assets)"));
             })
             ->where('proposer.status','=',1)
             ->select('proposer.proposal','proposer.id','proposer.p_id','proposer.created_at','assets.address')
+            ->orderBy('proposer.id','desc')
             ->get();
 
-        $response = array();
-        $response['data'] = array();
+            $response = array();
+            $response['data'] = array();
 
-        foreach($data as $val)
-        {
-            $resp['proposal'] = $val;
-            $resp['votes_support'] = DB::table('voting')->where('proposal_id','=',$val->id)->where('status','=',0)->count();
-            $resp['votes_oppose'] = DB::table('voting')->where('proposal_id','=',$val->id)->where('status','=',1)->count();
-            $resp['votes_neutral'] = DB::table('voting')->where('proposal_id','=',$val->id)->where('status','=',2)->count();
-            array_push($response['data'],$resp);
+            foreach($data as $val)
+            {
+                $resp['proposal'] = $val;
+                $resp['votes_support'] = DB::table('voting')->where('proposal_id','=',$val->id)->where('status','=',0)->count();
+                $resp['votes_oppose'] = DB::table('voting')->where('proposal_id','=',$val->id)->where('status','=',1)->count();
+                $resp['votes_neutral'] = DB::table('voting')->where('proposal_id','=',$val->id)->where('status','=',2)->count();
+                $resp['user_vote'] = DB::table('voting')->where('proposal_id','=',$val->id)->where('user_id','=',$user_id->tokenable_id)->select('status')->get();
+                array_push($response['data'],$resp);
+            }
+
+
+            $raw_data = $response['data'];
+
+            $page = !isset($_GET['page']) ? 1 : $_GET['page'];
+            $limit = 20; 
+            $offset = ($page - 1) * $limit; 
+            $total_items = count($raw_data);
+            $total_pages = ceil($total_items / $limit);
+            $final = array_splice($raw_data, $offset, $limit);
+
+            return $final;
         }
-
-        $raw_data = $response['data'];
-
-        $page = !isset($_GET['page']) ? 1 : $_GET['page'];
-        $limit = 20; 
-        $offset = ($page - 1) * $limit; 
-        $total_items = count($raw_data);
-        $total_pages = ceil($total_items / $limit);
-        $final = array_splice($raw_data, $offset, $limit);
-
-        return $final;
+        else 
+        {
+            return response()->json([
+                "message"=>"Invalid User",
+                "status"=>false,
+            ]);
+        }
     }
 
     public function power(Request $req)
