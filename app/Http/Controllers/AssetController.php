@@ -13,7 +13,6 @@ class AssetController extends Controller
     public function store(Request $req)
     {
         $validation = Validator::make($req->all(),[ 
-            // 'address' => 'required|unique:assets,address',
             'token' => 'required|unique:assets,token',
             '_token' => 'required',
         ]);
@@ -35,7 +34,6 @@ class AssetController extends Controller
                 $asset = new Asset();
 
                 $asset->user_id = $user_id->tokenable_id;
-                $asset->address = $req->address;
                 $asset->token = $req->token;
 
                 $asset->save();

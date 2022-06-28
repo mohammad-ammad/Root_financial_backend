@@ -14,7 +14,7 @@ class AuthController extends Controller
     public function store(Request $req)
     {
         $validation = Validator::make($req->all(),[ 
-            'email' => 'required|unique:users,email',
+            'address' => 'required|unique:users,address',
             'password' => 'required',
         ]);
 
@@ -27,8 +27,7 @@ class AuthController extends Controller
         else 
         {
             $user = new User();
-            $user->name = $req->email;
-            $user->email = $req->email;
+            $user->address = $req->address;
             $user->password = Hash::make($req->password);
             $user->save();
 
@@ -39,14 +38,14 @@ class AuthController extends Controller
                 "message"=>"User Created Successfully",
                 "status"=>true,
                 "token" => $token
-            ])->cookie('token', $token, 120);
+            ]);
         }
     }
 
     public function login(Request $req)
     {
         $validation = Validator::make($req->all(),[ 
-            'email' => 'required',
+            'address' => 'required',
             'password' => 'required',
         ]);
 
@@ -58,7 +57,7 @@ class AuthController extends Controller
 
         else 
         {
-            $user = User::where('email',$req->email)->first();
+            $user = User::where('address',$req->address)->first();
             
             if(! empty($user))
             {
@@ -68,10 +67,9 @@ class AuthController extends Controller
 
                     return response()->json([
                         "message"=>"Login Successfully",
-                        "role"=>$user->roles,
                         "status"=>true,
                         "token" => $token
-                    ])->cookie('token', $token, 120);
+                    ]);
                 }
                 else 
                 {

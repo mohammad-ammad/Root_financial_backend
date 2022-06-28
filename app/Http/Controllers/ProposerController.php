@@ -164,7 +164,14 @@ class ProposerController extends Controller
 
     public function fetch($token)
     {
-        // return $token;
+        if ($token == null) 
+        {
+            return response()->json([
+                "message"=>"Invalid User",
+                "status"=>false,
+            ]);
+        }
+
         [$id] = explode('|', $token , 2);
 
         $user_id = PersonalAccessToken::where('id',$id)->select('tokenable_id')->first();
@@ -172,12 +179,9 @@ class ProposerController extends Controller
         if(! empty($user_id))
         {
             $data = DB::table('proposer')
-            ->leftJoin('assets', function ($leftJoin) {
-                $leftJoin->on('proposer.user_id', '=', 'assets.user_id')
-                        ->where('assets.created_at', '=', DB::raw("(select max(`created_at`) from assets)"));
-            })
+            ->leftJoin('users','users.id','=','proposer.user_id')
             ->where('proposer.status','=',1)
-            ->select('proposer.proposal','proposer.id','proposer.p_id','proposer.created_at','assets.address')
+            ->select('proposer.proposal','proposer.id','proposer.p_id','proposer.created_at','users.address')
             ->orderBy('proposer.id','desc')
             ->get();
 
@@ -253,12 +257,10 @@ class ProposerController extends Controller
     public function voting_result()
     {
         $data = DB::table('proposer')
-            ->leftJoin('assets', function ($leftJoin) {
-                $leftJoin->on('proposer.user_id', '=', 'assets.user_id')
-                        ->where('assets.created_at', '=', DB::raw("(select max(`created_at`) from assets)"));
-            })
+            ->leftJoin('users','users.id','=','proposer.user_id')
             ->where('proposer.status','=',0)
-            ->select('proposer.proposal','proposer.id','proposer.p_id','proposer.created_at','assets.address')
+            ->select('proposer.proposal','proposer.id','proposer.p_id','proposer.created_at','users.address')
+            ->orderBy('proposer.id','desc')
             ->get();
 
         $response = array();
