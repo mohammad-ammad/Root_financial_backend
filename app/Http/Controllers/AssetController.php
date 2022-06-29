@@ -7,6 +7,7 @@ use Validator;
 use App\Models\Asset;
 use App\Models\PersonalAccessToken;
 use Cookie;
+use DB;
 
 class AssetController extends Controller
 {
@@ -14,7 +15,8 @@ class AssetController extends Controller
     {
         $validation = Validator::make($req->all(),[ 
             'token' => 'required|unique:assets,token',
-            '_token' => 'required',
+            'address'=>'required'
+            // '_token' => 'required',
         ]);
 
         if ($validation->fails()) 
@@ -25,15 +27,19 @@ class AssetController extends Controller
 
         else 
         {
-            [$id] = explode('|', $req->_token , 2);
+            // [$id] = explode('|', $req->_token , 2);
 
-            $user_id = PersonalAccessToken::where('id',$id)->select('tokenable_id')->first();
+            // $user_id = PersonalAccessToken::where('id',$id)->select('tokenable_id')->first();
 
-            if(! empty($user_id))
+            $user = DB::table('users')->where('address',$req->address)->select('id')->first();
+
+            $user = $user->id;
+
+            if(! empty($user))
             {
                 $asset = new Asset();
 
-                $asset->user_id = $user_id->tokenable_id;
+                $asset->user_id = $user;
                 $asset->token = $req->token;
 
                 $asset->save();
@@ -60,8 +66,6 @@ class AssetController extends Controller
                     "status"=>false,
                 ]);
             }
-            
-
         }
     }
 }

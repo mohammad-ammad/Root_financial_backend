@@ -4,6 +4,8 @@ namespace App\Console;
 
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
+use DB;
+use Carbon\Carbon;
 
 class Kernel extends ConsoleKernel
 {
@@ -13,9 +15,19 @@ class Kernel extends ConsoleKernel
      * @param  \Illuminate\Console\Scheduling\Schedule  $schedule
      * @return void
      */
+
+    // protected $commands = [
+    //     // Commands\DemoCron::class,
+    //     'App\Console\Commands\DemoCron',
+    // ];
+
     protected function schedule(Schedule $schedule)
     {
-        // $schedule->command('inspire')->hourly();
+        $schedule->call(function () {
+            $date= Carbon::now()->toDateString();
+            DB::table('proposer')->where('status','=',1)->where('expires_at','=',$date)
+            ->update(array('status'=> 0));
+        })->everyThreeMinutes();
     }
 
     /**

@@ -14,7 +14,7 @@ class ShareController extends Controller
     public function store(Request $req)
     {
         $validation = Validator::make($req->all(),[ 
-            '_token' => 'required',
+            'address' => 'required',
         ]);
 
         if ($validation->fails()) 
@@ -23,15 +23,19 @@ class ShareController extends Controller
             return response()->json($response);
         }
 
-        [$id] = explode('|', $req->_token , 2);
+        // [$id] = explode('|', $req->_token , 2);
 
-        $user_id = PersonalAccessToken::where('id',$id)->select('tokenable_id')->first();
+        // $user_id = PersonalAccessToken::where('id',$id)->select('tokenable_id')->first();
 
-        if(! empty($user_id))
+        $user = DB::table('users')->where('address',$req->address)->select('id')->first();
+
+        $user = $user->id;
+
+        if(! empty($user))
         {
-            $check = Share::where('user_id',$user_id->tokenable_id)->first();
+            $check = Share::where('user_id',$user)->first();
 
-            $asset = Asset::where('user_id', $user_id->tokenable_id)->where('status',1)->count();
+            $asset = Asset::where('user_id', $user)->where('status',1)->count();
 
             $total_shares = ($asset * 100)/5000000;
         
@@ -70,7 +74,7 @@ class ShareController extends Controller
             {
                 $share = new Share();
         
-                $share->user_id = $user_id->tokenable_id;
+                $share->user_id = $user;
                 $share->total_share = $total_shares;
         
                 if($req->reward)
@@ -107,25 +111,28 @@ class ShareController extends Controller
        
     }
 
-    public function fetch(Request $req)
+    public function fetch($token)
     {
-        $validation = Validator::make($req->all(),[ 
-            '_token' => 'required',
-        ]);
-
-        if ($validation->fails()) 
+        
+        if ($token == null) 
         {
-            $response['message'] = $validation->messages()->first();
-            return response()->json($response);
+            return response()->json([
+                "message"=>"Invalid User",
+                "status"=>false,
+            ]);
         }
 
-        [$id] = explode('|', $req->_token , 2);
+        // [$id] = explode('|', $token , 2);
 
-        $user_id = PersonalAccessToken::where('id',$id)->select('tokenable_id')->first();
+        // $user_id = PersonalAccessToken::where('id',$id)->select('tokenable_id')->first();
 
-        if(! empty($user_id))
+        $user = DB::table('users')->where('address',$token)->select('id')->first();
+
+        $user = $user->id;
+
+        if(! empty($user))
         {
-            $share = Share::where('user_id',$user_id->tokenable_id)->first();
+            $share = Share::where('user_id',$user)->first();
 
             if(! empty($share))
             {
@@ -186,11 +193,15 @@ class ShareController extends Controller
             ]);
         }
         
-        [$id] = explode('|', $tokenId , 2);
+        // [$id] = explode('|', $tokenId , 2);
 
-        $user_id = PersonalAccessToken::where('id',$id)->select('tokenable_id')->first();
+        // $user_id = PersonalAccessToken::where('id',$id)->select('tokenable_id')->first();
+
+        $user = DB::table('users')->where('address',$tokenId)->select('id')->first();
+
+        $user = $user->id;
         
-        $data = Asset::where('user_id',$user_id->tokenable_id)->where('status',1)->limit($token)->orderBy('id','desc')->get();
+        $data = Asset::where('user_id',$user)->where('status',1)->limit($token)->orderBy('id','desc')->get();
         
         foreach($data as $val)
         {
@@ -199,11 +210,11 @@ class ShareController extends Controller
             $resp->update();
         }
         
-        if(! empty($user_id))
+        if(! empty($user))
         {
-            $check = Share::where('user_id',$user_id->tokenable_id)->first();
+            $check = Share::where('user_id',$user)->first();
 
-            $asset = Asset::where('user_id', $user_id->tokenable_id)->where('status',1)->count();
+            $asset = Asset::where('user_id', $user)->where('status',1)->count();
 
             $total_shares = ($asset * 100)/5000000;
         

@@ -18,7 +18,7 @@ class ProposerController extends Controller
     public function store(Request $req)
     {
         $validation = Validator::make($req->all(),[ 
-            '_token' => 'required',
+            'address' => 'required',
             'proposal' => 'required',
             'p_id' => 'required',
         ]);
@@ -29,16 +29,21 @@ class ProposerController extends Controller
             return response()->json($response);
         }
 
-        [$id] = explode('|', $req->_token , 2);
+        // [$id] = explode('|', $req->_token , 2);
 
-        $user_id = PersonalAccessToken::where('id',$id)->select('tokenable_id')->first();
+        // $user_id = PersonalAccessToken::where('id',$id)->select('tokenable_id')->first();
 
-        $date= Carbon::now()->addDays(12)->toDateString();
+        $user = DB::table('users')->where('address',$req->address)->select('id')->first();
 
-        if(! empty($user_id))
+        $user = $user->id;
+
+        // $date= Carbon::now()->addDays(12)->toDateString();
+        $date= Carbon::now()->toDateString();
+
+        if(! empty($user))
         {
             $proposer = new Proposer();
-            $proposer->user_id = $user_id->tokenable_id;
+            $proposer->user_id = $user;
             $proposer->proposal = $req->proposal;
             $proposer->p_id = $req->p_id;
             $proposer->expires_at = $date;
@@ -72,7 +77,7 @@ class ProposerController extends Controller
     public function vote(Request $req)
     {
         $validation = Validator::make($req->all(),[ 
-            '_token' => 'required',
+            'address' => 'required',
         ]);
 
         if ($validation->fails()) 
@@ -81,11 +86,15 @@ class ProposerController extends Controller
             return response()->json($response);
         }
 
-        [$id] = explode('|', $req->_token , 2);
+        // [$id] = explode('|', $req->_token , 2);
 
-        $user_id = PersonalAccessToken::where('id',$id)->select('tokenable_id')->first();
+        // $user_id = PersonalAccessToken::where('id',$id)->select('tokenable_id')->first();
 
-        if(! empty($user_id))
+        $user = DB::table('users')->where('address',$req->address)->select('id')->first();
+
+        $user = $user->id;
+
+        if(! empty($user))
         {
 
             $date= Carbon::now()->toDateString();
@@ -106,17 +115,17 @@ class ProposerController extends Controller
                 }
                 else 
                 {
-                    $check = Voting::where('proposal_id',$req->proposer_id)->where('user_id',$user_id->tokenable_id)->count();
+                    $check = Voting::where('proposal_id',$req->proposer_id)->where('user_id',$user)->count();
                     
                     if($check == 0)
                     {
-                        $asset = Asset::where('user_id',$user_id->tokenable_id)->where('status',1)->count();
+                        $asset = Asset::where('user_id',$user)->where('status',1)->count();
 
                         if($asset > 0)
                         {
                             $vote = new Voting();
                             $vote->proposal_id = $req->proposer_id;
-                            $vote->user_id = $user_id->tokenable_id;
+                            $vote->user_id = $user;
                             $vote->status = $req->vote;
                             $vote->power = $asset;
                             $vote->save();
@@ -172,11 +181,15 @@ class ProposerController extends Controller
             ]);
         }
 
-        [$id] = explode('|', $token , 2);
+        // [$id] = explode('|', $token , 2);
 
-        $user_id = PersonalAccessToken::where('id',$id)->select('tokenable_id')->first();
+        // $user_id = PersonalAccessToken::where('id',$id)->select('tokenable_id')->first();
+
+        $user = DB::table('users')->where('address',$token)->select('id')->first();
+
+        $user = $user->id;
     
-        if(! empty($user_id))
+        if(! empty($user))
         {
             $data = DB::table('proposer')
             ->leftJoin('users','users.id','=','proposer.user_id')
@@ -194,7 +207,7 @@ class ProposerController extends Controller
                 $resp['votes_support'] = DB::table('voting')->where('proposal_id','=',$val->id)->where('status','=',0)->count();
                 $resp['votes_oppose'] = DB::table('voting')->where('proposal_id','=',$val->id)->where('status','=',1)->count();
                 $resp['votes_neutral'] = DB::table('voting')->where('proposal_id','=',$val->id)->where('status','=',2)->count();
-                $resp['user_vote'] = DB::table('voting')->where('proposal_id','=',$val->id)->where('user_id','=',$user_id->tokenable_id)->select('status')->get();
+                $resp['user_vote'] = DB::table('voting')->where('proposal_id','=',$val->id)->where('user_id','=',$user)->select('status')->get();
                 array_push($response['data'],$resp);
             }
 
@@ -222,7 +235,7 @@ class ProposerController extends Controller
     public function power(Request $req)
     {
         $validation = Validator::make($req->all(),[ 
-            '_token' => 'required',
+            'address' => 'required',
         ]);
 
         if ($validation->fails()) 
@@ -231,13 +244,17 @@ class ProposerController extends Controller
             return response()->json($response);
         }
 
-        [$id] = explode('|', $req->_token , 2);
+        // [$id] = explode('|', $req->_token , 2);
 
-        $user_id = PersonalAccessToken::where('id',$id)->select('tokenable_id')->first();
+        // $user_id = PersonalAccessToken::where('id',$id)->select('tokenable_id')->first();
 
-        if(! empty($user_id))
+        $user = DB::table('users')->where('address',$req->address)->select('id')->first();
+
+        $user = $user->id;
+
+        if(! empty($user))
         {
-            $data = Voting::where('user_id',$user_id->tokenable_id)
+            $data = Voting::where('user_id',$user)
             ->select('power')->orderBy('id', 'desc')->limit(1)->get();
 
             return response()->json([
@@ -256,35 +273,62 @@ class ProposerController extends Controller
 
     public function voting_result()
     {
-        $data = DB::table('proposer')
-            ->leftJoin('users','users.id','=','proposer.user_id')
-            ->where('proposer.status','=',0)
-            ->select('proposer.proposal','proposer.id','proposer.p_id','proposer.created_at','users.address')
-            ->orderBy('proposer.id','desc')
-            ->get();
+        $total_users = DB::table('users')->where('status','=',1)->count();
+        $check = DB::table('proposer')
+        ->leftJoin('voting','voting.proposal_id','=','proposer.id')
+        ->where('proposer.status','=',0)
+        ->count();
 
-        $response = array();
-        $response['data'] = array();
-
-        foreach($data as $val)
+        if($check == 0)
         {
-            $resp['proposal'] = $val;
-            $resp['votes_support'] = DB::table('voting')->where('proposal_id','=',$val->id)->where('status','=',0)->count();
-            $resp['votes_oppose'] = DB::table('voting')->where('proposal_id','=',$val->id)->where('status','=',1)->count();
-            $resp['votes_neutral'] = DB::table('voting')->where('proposal_id','=',$val->id)->where('status','=',2)->count();
-            
-            array_push($response['data'],$resp);
+            return response()->json([
+                "message"=>"Result pending",
+                "status"=>false,
+            ]);
         }
 
-        $raw_data = $response['data'];
+        $percentage = ($check/$total_users)*100;
+        
+        if($percentage >= 60)
+        {
+            $data = DB::table('proposer')
+                ->leftJoin('users','users.id','=','proposer.user_id')
+                ->where('proposer.status','=',0)
+                ->select('proposer.proposal','proposer.id','proposer.p_id','proposer.created_at','users.address')
+                ->orderBy('proposer.id','desc')
+                ->get();
 
-        $page = !isset($_GET['page']) ? 1 : $_GET['page'];
-        $limit = 20; 
-        $offset = ($page - 1) * $limit; 
-        $total_items = count($raw_data);
-        $total_pages = ceil($total_items / $limit);
-        $final = array_splice($raw_data, $offset, $limit);
+                $response = array();
+                $response['data'] = array();
 
-        return $final;
+                foreach($data as $val)
+                {
+                    $resp['proposal'] = $val;
+                    $resp['votes_support'] = DB::table('voting')->where('proposal_id','=',$val->id)->where('status','=',0)->count();
+                    $resp['votes_oppose'] = DB::table('voting')->where('proposal_id','=',$val->id)->where('status','=',1)->count();
+                    $resp['votes_neutral'] = DB::table('voting')->where('proposal_id','=',$val->id)->where('status','=',2)->count();
+                    
+                    array_push($response['data'],$resp);
+                }
+
+                $raw_data = $response['data'];
+
+                $page = !isset($_GET['page']) ? 1 : $_GET['page'];
+                $limit = 20; 
+                $offset = ($page - 1) * $limit; 
+                $total_items = count($raw_data);
+                $total_pages = ceil($total_items / $limit);
+                $final = array_splice($raw_data, $offset, $limit);
+
+                return $final;
+        }
+        else 
+        {
+            return response()->json([
+                "message"=>"Vote count is less than 60%",
+                "status"=>false,
+            ]);
+        }
+        
     }
 }

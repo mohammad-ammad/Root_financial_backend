@@ -27,7 +27,7 @@ Route::post('v1/assets',[App\Http\Controllers\AssetController::class,'store']);
 
 //shares
 Route::post('v1/shares',[App\Http\Controllers\ShareController::class,'store']);
-Route::get('v1/shares',[App\Http\Controllers\ShareController::class,'fetch']);
+Route::get('v1/shares/{token}',[App\Http\Controllers\ShareController::class,'fetch']);
 Route::get('v1/all_shares',[App\Http\Controllers\ShareController::class,'fetch_all']);
 Route::get('v1/remove/{token}/{tokenId}',[App\Http\Controllers\ShareController::class,'remove_token']);
 
@@ -40,5 +40,6 @@ Route::get('v1/voting-result',[App\Http\Controllers\ProposerController::class,'v
 
 
 Route::post('/v1/register',[App\Http\Controllers\AuthController::class,'store']);
+Route::post('/v1/pre-register',[App\Http\Controllers\AuthController::class,'pre_store']);
 Route::post('/v1/login',[App\Http\Controllers\AuthController::class,'login']);
 

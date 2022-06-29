@@ -8,13 +8,86 @@ use Validator;
 use Hash;
 use Cookie;
 use App\Models\PersonalAccessToken;
+use App\Models\Asset;
 
 class AuthController extends Controller
 {
+    public function pre_store(Request $req)
+    {
+        $validation = Validator::make($req->all(),[ 
+            'token' => 'required|unique:assets,token',
+        ]);
+
+        if ($validation->fails()) 
+        {
+            $response['message'] = $validation->messages()->first();
+            return response()->json($response);
+        }
+        
+        
+            $check = User::where('address',$req->address)->first();
+            if( !empty($check))
+            {
+                $userId = $check->id;
+            }
+            else 
+            {
+                $validation = Validator::make($req->all(),[ 
+                    'address' => 'required|unique:users,address',
+                    'token' => 'required|unique:assets,token',
+                ]);
+        
+                if ($validation->fails()) 
+                {
+                    $response['message'] = $validation->messages()->first();
+                    return response()->json($response);
+                }
+
+                $user = new User();
+                $user->address = $req->address;
+                $user->status = 0;
+                $user->save();
+                $userId = $user->id;
+            }
+            
+            if(! empty($userId))
+            {
+                $asset = new Asset();
+
+                $asset->user_id = $userId;
+                $asset->token = $req->token;
+
+                $asset->save();
+
+                if(! empty($asset->id))
+                {
+                    return response()->json([
+                        "message"=>"Data Inserted Successfully",
+                        "status"=>true,
+                    ]);
+                }
+                else 
+                {
+                    return response()->json([
+                        "message"=>"Something went wrong",
+                        "status"=>false,
+                    ]);
+                }
+            }
+            else 
+            {
+                return response()->json([
+                    "message"=>"Something went wrong",
+                    "status"=>false,
+                ]);
+            }
+
+        
+    }
     public function store(Request $req)
     {
         $validation = Validator::make($req->all(),[ 
-            'address' => 'required|unique:users,address',
+            'address' => 'required',
             'password' => 'required',
         ]);
 
@@ -26,10 +99,14 @@ class AuthController extends Controller
 
         else 
         {
-            $user = new User();
-            $user->address = $req->address;
-            $user->password = Hash::make($req->password);
-            $user->save();
+            $user = User::where('address',$req->address)->first();
+            
+            if($user->status == 0)
+            {
+                $user->password = Hash::make($req->password);
+                $user->status = 1;
+                $user->update();
+            }
 
             $token = $user->createToken('root_finance')->plainTextToken;
 
